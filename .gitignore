@@ -47,3 +47,13 @@ cereal_version.out
 xml_ordering.out
 build
 /out/
+
+# buck stuff
+/buck-out
+/.buckconfig.local
+/.buckd
+/.buckjavaargs.local
+/.buckversion.local
+/.bucklogging.local.properties
+.fakebuckversion
+/.nobuckcheck
