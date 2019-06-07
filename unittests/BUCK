@@ -1,0 +1,72 @@
+# Note: this requires that g++-multilib package and 32 bit
+# architecture suppart are installed for the 32 bit test -- not sure
+# how to check for that in buck
+load('//unittests:sh_test_not_on_wsl.bzl', 'sh_test_not_on_wsl')
+
+# The build target prefix for unit tests. It would be nice to query
+# for this directly
+unittest_base_path='//unittests:'
+
+def declare_test_binary(src, bits=None):
+    exe_name = src.replace('.cpp', '')
+    compiler_flags = [
+        '-std=c++11', '-Wall', '-g', '-Wextra', '-Wshadow', '-pedantic',
+        '-Wold-style-cast',
+    ]
+    linker_flags = []
+    if bits == 32:
+        exe_name += '_32'
+        compiler_flags.append('-m32')
+        linker_flags.append('-m32')
+    else:
+        exe_name += '_64'
+
+    cxx_binary(
+        name=exe_name,
+        srcs=[src],
+        deps=[
+            '//:cereal',
+        ],
+        include_directories=[
+            '.',
+        ],
+        compiler_flags=compiler_flags,
+        linker_flags=linker_flags,
+        visibility=[unittest_base_path, ]
+    )
+
+    if src == 'portability_test.cpp':
+        if is_64_bit_platform() and bits != 32:
+            sh_test_not_on_wsl(
+                name='test_portability',
+                test='run_portability_test.sh',
+                args=[
+                    '$(exe ' + unittest_base_path + 'portability_test_32)',
+                    '$(exe ' + unittest_base_path + 'portability_test_64)',
+                ],
+            )
+    else:
+        test_name='test_' + exe_name
+        args = {
+            'name': test_name,
+            'test': unittest_base_path + exe_name,
+            'args': [
+            ],
+        }
+        if bits == 32:
+            sh_test_not_on_wsl(**args)
+        else:
+            sh_test(**args)
+
+def is_64_bit_platform():
+    a=host_info().arch
+    return (a.is_aarch64 or a.is_mips64 or a.is_mipsel64 or
+            a.is_ppc64 or a.is_x86_64)
+
+def declare_all_test_binaries():
+    for src in glob(['*.cpp',]):
+        declare_test_binary(src)
+        if is_64_bit_platform():
+            declare_test_binary(src, 32)
+
+declare_all_test_binaries()

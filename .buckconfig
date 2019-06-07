@@ -1,0 +1,5 @@
+[project]
+    ignore = .buckd, \
+             .git, \
+             buck-cache, \
+             buck-out, \
